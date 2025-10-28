@@ -1,0 +1,37 @@
+[
+  {
+    "name": "gateway_device",
+    "package_name": "git+https://github.com/ohcnetwork/care_teleicu_devices.git",
+    "version": "@main",
+    "configs": {}
+  },
+  {
+    "name": "camera_device",
+    "package_name": "git+https://github.com/ohcnetwork/care_teleicu_devices.git",
+    "version": "@main",
+    "configs": {}
+  },
+  {
+    "name": "vitals_observation_device",
+    "package_name": "git+https://github.com/ohcnetwork/care_teleicu_devices.git",
+    "version": "@main",
+    "configs": {}
+  },
+  {
+    "name": "abdm",
+    "package_name": "git+https://github.com/ohcnetwork/care_abdm.git",
+    "version": "@master",
+    "configs": {
+      "ABDM_CLIENT_ID": "abdm_client_id",
+      "ABDM_CLIENT_SECRET": "abdm_client_secret",
+      "ABDM_GATEWAY_URL": "",
+      "ABDM_ABHA_URL": "",
+      "ABDM_FACILITY_URL": "",
+      "ABDM_HIP_NAME_PREFIX": "",
+      "ABDM_HIP_NAME_SUFFIX": "",
+      "ABDM_USERNAME": "",
+      "ABDM_CM_ID": "",
+      "AUTH_USER_MODEL": "users.User"
+    }
+  }
+]
