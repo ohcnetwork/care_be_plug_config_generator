@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Checkbox } from "./components/ui/checkbox";
 import { toast } from "sonner";
 import { Button } from "./components/ui/button";
@@ -13,64 +13,36 @@ interface PluginConfig {
   configs: object;
 }
 
-const STORAGE_KEY = "pluginSelector_availablePlugins";
-
-// Load and merge plugins from localStorage with defaults
-const loadAvailablePlugins = (): PluginConfig[] => {
-  const defaultPlugins: PluginConfig[] = allPluginConfigs.map((config) => ({
-    name: config.name,
-    package_name: config.package_name,
-    version: config.version,
-    configs: config.configs,
-  }));
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const storedPlugins: PluginConfig[] = JSON.parse(stored);
-      // Merge: keep all stored plugins, add any defaults not in stored
-      const mergedMap = new Map<string, PluginConfig>();
-
-      // Add all stored plugins first
-      storedPlugins.forEach((plugin) => {
-        mergedMap.set(plugin.name, plugin);
-      });
-
-      // Add defaults if not already present
-      defaultPlugins.forEach((plugin) => {
-        if (!mergedMap.has(plugin.name)) {
-          mergedMap.set(plugin.name, plugin);
-        }
-      });
-
-      return Array.from(mergedMap.values());
-    }
-  } catch (error) {
-    console.error("Error loading plugins from localStorage:", error);
-  }
-
-  return defaultPlugins;
-};
+// Default plugins from JSON file
+const defaultPlugins: PluginConfig[] = allPluginConfigs.map((config) => ({
+  name: config.name,
+  package_name: config.package_name,
+  version: config.version,
+  configs: config.configs,
+}));
 
 export default function PluginSelector() {
-  const [availablePlugins, setAvailablePlugins] =
-    useState<PluginConfig[]>(loadAvailablePlugins);
+  const [userAddedPlugins, setUserAddedPlugins] = useState<PluginConfig[]>([]);
   const [selectedPlugins, setSelectedPlugins] = useState<PluginConfig[]>([]);
   const [textareaValue, setTextareaValue] = useState<string>("[]");
 
-  // Save availablePlugins to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(availablePlugins));
-    } catch (error) {
-      console.error("Error saving plugins to localStorage:", error);
-    }
-  }, [availablePlugins]);
+  // Combine default plugins with user-added plugins
+  const availablePlugins = [...defaultPlugins, ...userAddedPlugins];
 
   const copyToClipboard = async (config: string) => {
     if (config.trim() === "[]") return;
-    await navigator.clipboard.writeText(config);
-    toast("Config copied to clipboard");
+
+    // Minify the JSON to single line before copying
+    try {
+      const parsed = JSON.parse(config);
+      const minified = JSON.stringify(parsed);
+      await navigator.clipboard.writeText(minified);
+      toast("Config copied to clipboard");
+    } catch {
+      // If parsing fails, copy as-is
+      await navigator.clipboard.writeText(config);
+      toast("Config copied to clipboard");
+    }
   };
 
   const handlePluginToggle = (plugin: PluginConfig) => {
@@ -106,13 +78,13 @@ export default function PluginSelector() {
       if (Array.isArray(parsed)) {
         setSelectedPlugins(parsed);
 
-        // Detect and add any new plugins to availablePlugins
+        // Detect and add any new plugins to userAddedPlugins
         const newPlugins: PluginConfig[] = [];
         parsed.forEach((plugin) => {
-          // Check if this plugin exists in availablePlugins
+          // Check if this plugin exists in availablePlugins (both default and user-added)
           const exists = availablePlugins.some((p) => p.name === plugin.name);
           if (!exists && plugin.name && plugin.package_name) {
-            // This is a new plugin, add it
+            // This is a new plugin, add it to user-added list
             newPlugins.push({
               name: plugin.name,
               package_name: plugin.package_name,
@@ -123,7 +95,7 @@ export default function PluginSelector() {
         });
 
         if (newPlugins.length > 0) {
-          setAvailablePlugins((prev) => [...prev, ...newPlugins]);
+          setUserAddedPlugins((prev) => [...prev, ...newPlugins]);
           toast(`Added ${newPlugins.length} new plugin(s) to the list`);
         }
       }
