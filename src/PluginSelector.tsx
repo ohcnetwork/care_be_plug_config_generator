@@ -95,8 +95,7 @@ export default function PluginSelector() {
         });
 
         if (newPlugins.length > 0) {
-          setUserAddedPlugins((prev) => [...prev, ...newPlugins]);
-          toast(`Added ${newPlugins.length} new plugin(s) to the list`);
+          setUserAddedPlugins([...newPlugins]);
         }
       }
     } catch {
