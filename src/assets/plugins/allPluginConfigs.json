@@ -33,5 +33,29 @@
       "ABDM_CM_ID": "",
       "AUTH_USER_MODEL": "users.User"
     }
+  },
+  {
+    "name": "scribe",
+    "package_name": "git@github.com:ohcnetwork/care_scribe.git",
+    "version": "@main",
+    "configs": {}
+  },
+  {
+    "name": "analytics",
+    "package_name": "git@github.com:ohcnetwork/analytics_plug.git",
+    "version": "@main",
+    "configs": {}
+  },
+  {
+    "name": "care_hcx",
+    "package_name": "git@github.com:ohcnetwork/care_hcx.git",
+    "version": "@main",
+    "configs": {}
+  },
+  {
+    "name": "livekit",
+    "package_name": "git@github.com:ohcnetwork/care_livekit.git",
+    "version": "@main",
+    "configs": {}
   }
 ]

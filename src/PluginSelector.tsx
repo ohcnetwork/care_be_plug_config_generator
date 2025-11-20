@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Checkbox } from "./components/ui/checkbox";
 import { toast } from "sonner";
 import { Button } from "./components/ui/button";
@@ -13,16 +13,59 @@ interface PluginConfig {
   configs: object;
 }
 
-export default function PluginSelector() {
-  const initialPlugins: PluginConfig[] = allPluginConfigs.map((config) => ({
+const STORAGE_KEY = "pluginSelector_availablePlugins";
+
+// Load and merge plugins from localStorage with defaults
+const loadAvailablePlugins = (): PluginConfig[] => {
+  const defaultPlugins: PluginConfig[] = allPluginConfigs.map((config) => ({
     name: config.name,
     package_name: config.package_name,
     version: config.version,
     configs: config.configs,
   }));
 
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const storedPlugins: PluginConfig[] = JSON.parse(stored);
+      // Merge: keep all stored plugins, add any defaults not in stored
+      const mergedMap = new Map<string, PluginConfig>();
+
+      // Add all stored plugins first
+      storedPlugins.forEach((plugin) => {
+        mergedMap.set(plugin.name, plugin);
+      });
+
+      // Add defaults if not already present
+      defaultPlugins.forEach((plugin) => {
+        if (!mergedMap.has(plugin.name)) {
+          mergedMap.set(plugin.name, plugin);
+        }
+      });
+
+      return Array.from(mergedMap.values());
+    }
+  } catch (error) {
+    console.error("Error loading plugins from localStorage:", error);
+  }
+
+  return defaultPlugins;
+};
+
+export default function PluginSelector() {
+  const [availablePlugins, setAvailablePlugins] =
+    useState<PluginConfig[]>(loadAvailablePlugins);
   const [selectedPlugins, setSelectedPlugins] = useState<PluginConfig[]>([]);
   const [textareaValue, setTextareaValue] = useState<string>("[]");
+
+  // Save availablePlugins to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(availablePlugins));
+    } catch (error) {
+      console.error("Error saving plugins to localStorage:", error);
+    }
+  }, [availablePlugins]);
 
   const copyToClipboard = async (config: string) => {
     if (config.trim() === "[]") return;
@@ -62,6 +105,27 @@ export default function PluginSelector() {
       const parsed = JSON.parse(text);
       if (Array.isArray(parsed)) {
         setSelectedPlugins(parsed);
+
+        // Detect and add any new plugins to availablePlugins
+        const newPlugins: PluginConfig[] = [];
+        parsed.forEach((plugin) => {
+          // Check if this plugin exists in availablePlugins
+          const exists = availablePlugins.some((p) => p.name === plugin.name);
+          if (!exists && plugin.name && plugin.package_name) {
+            // This is a new plugin, add it
+            newPlugins.push({
+              name: plugin.name,
+              package_name: plugin.package_name,
+              version: plugin.version || "",
+              configs: plugin.configs || {},
+            });
+          }
+        });
+
+        if (newPlugins.length > 0) {
+          setAvailablePlugins((prev) => [...prev, ...newPlugins]);
+          toast(`Added ${newPlugins.length} new plugin(s) to the list`);
+        }
       }
     } catch {
       // Invalid JSON - user is still typing, so ignore
@@ -84,7 +148,7 @@ export default function PluginSelector() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Available Plugins</h2>
             <div className="space-y-3 overflow-y-auto max-h-[500px]">
-              {initialPlugins.map((plugin: PluginConfig) => {
+              {availablePlugins.map((plugin: PluginConfig) => {
                 const isSelected = selectedPlugins.some(
                   (p) => p.name === plugin.name
                 );
